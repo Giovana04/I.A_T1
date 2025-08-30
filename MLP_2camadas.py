@@ -1,8 +1,8 @@
-import numpy as np
-import pandas as pd
-from sklearn.metrics import classification_report
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+import numpy as np # Serve para fazer operações matemáticas
+import pandas as pd # Serve para ler o CSV
+from sklearn.metrics import classification_report # Serve para mostrar o relatório de classificação
+from sklearn.model_selection import train_test_split # Serve para dividir os dados em treino e teste
+from sklearn.preprocessing import StandardScaler # Serve para padronizar os dados
 
 class MLP:
     def __init__(self, tamanhos_das_camadas, tx_apendizagem=0.01, iteracoes=1000):
