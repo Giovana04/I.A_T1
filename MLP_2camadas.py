@@ -1,0 +1,112 @@
+import numpy as np
+import pandas as pd
+from sklearn.metrics import classification_report
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
+class MLP:
+    def __init__(self, tamanhos_das_camadas, tx_apendizagem=0.01, iteracoes=1000):
+        self.tamanhos_das_camadas = tamanhos_das_camadas
+        self.tx_apendizagem = tx_apendizagem
+        self.iteracoes = iteracoes
+        self.pesos = []
+        self.bias = []
+        
+        for i in range(len(tamanhos_das_camadas) - 1):
+            self.pesos.append(np.random.randn(tamanhos_das_camadas[i], tamanhos_das_camadas[i+1]) * 0.1)
+            self.bias.append(np.zeros((1, tamanhos_das_camadas[i+1])))
+
+    def ativacao(self, x):
+        return 1 / (1 + np.exp(-x))
+
+    def derivada_ativacao(self, x):
+        return x * (1 - x)
+
+    def propagacao(self, x):
+        ativacoes = x
+        for i in range(len(self.pesos)):
+            soma_ponderada = np.dot(ativacoes, self.pesos[i]) + self.bias[i]
+            ativacoes = self.ativacao(soma_ponderada)
+        return np.round(ativacoes)
+
+    def treino(self, x, y):
+        for epoca in range(self.iteracoes):
+            lista_ativacoes = [x]
+            ativacoes_camada = x
+            
+            for i in range(len(self.pesos)):
+                soma_ponderada = np.dot(ativacoes_camada, self.pesos[i]) + self.bias[i]
+                ativacoes_camada = self.ativacao(soma_ponderada)
+                lista_ativacoes.append(ativacoes_camada)
+                
+            saida_final = lista_ativacoes[-1]
+
+            # --- Início do Retropropagação ---
+            erro = y - saida_final
+            
+            for i in reversed(range(len(self.pesos))):
+                derivada = self.derivada_ativacao(lista_ativacoes[i+1])
+                delta = erro * derivada
+                erro = delta.dot(self.pesos[i].T)
+                
+                self.pesos[i] += lista_ativacoes[i].T.dot(delta) * self.tx_apendizagem
+                self.bias[i] += np.sum(delta, axis=0, keepdims=True) * self.tx_apendizagem
+            
+            # A cada 100 ciclos, imprime o status do treino
+            if (epoca + 1) % 100 == 0:
+                loss = np.mean(np.square(y - saida_final))
+                acc = np.mean(np.round(saida_final) == y)
+                print(f"Ciclo {epoca+1}/{self.iteracoes} -> loss: {loss:.4f} - acc: {acc:.4f}")
+                
+                
+
+
+def prepara_dados_com_scaler(arq):
+    df = pd.read_csv(arq, decimal=',')
+    df = df.drop('Animal_ID', axis=1)
+
+    # Arruma os valores ausntes
+    for column in df.columns:
+        if df[column].dtype == 'object':
+            # Coloca o resultado de volta na coluna
+            df[column] = df[column].fillna(df[column].mode()[0])
+        else:
+            # Coloca o resultado de volta na coluna
+            df[column] = df[column].fillna(df[column].median())
+
+    Y = df['Pregnancy_Status'].values
+    X = df.drop('Pregnancy_Status', axis=1)
+    
+    X = pd.get_dummies(X, drop_first=True)
+    
+    numeric_cols = X.select_dtypes(include=np.number).columns
+    scaler = StandardScaler()
+    X[numeric_cols] = scaler.fit_transform(X[numeric_cols])
+
+    X = X.values.astype(float)
+    Y = np.where(Y == 'Yes', 1, 0)
+    
+    return X, Y.reshape(-1, 1)
+
+# ---- Main ----
+X, Y = prepara_dados_com_scaler('dados.csv')
+X_treino, X_teste, Y_treino, Y_teste = train_test_split(X, Y, test_size=0.3, random_state=42)
+
+n_features_entrada = X_treino.shape[1]
+n_camada_oculta_1 = 10
+n_camada_oculta_2 = 5
+n_camada_saida = 1
+
+tamanhos_das_camadas = [n_features_entrada, n_camada_oculta_1, n_camada_oculta_2, n_camada_saida]
+
+mlp = MLP(tamanhos_das_camadas=tamanhos_das_camadas, tx_apendizagem=0.01, iteracoes=5000)
+mlp.treino(X_treino, Y_treino)
+
+previsoes = mlp.propagacao(X_teste)
+
+print("\nTestes:")
+print(classification_report(Y_teste, previsoes))
+print("Número de previsões corretas:", np.sum(Y_teste == previsoes))
+print("Número de previsões incorretas:", np.sum(Y_teste != previsoes))
+print("\nNúmero de neurônios na primeira camada oculta:", n_camada_oculta_1)
+print("Número de neurônios na segunda camada oculta:", n_camada_oculta_2)

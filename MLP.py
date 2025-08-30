@@ -11,7 +11,7 @@ class MLP:
         self.saida = saida
         self.tx_apendizagem = tx_apendizagem
         self.iteracoes = iteracoes
-        self.pesos_hide = np.random.rand(self.entradas.shape[1], self.c_hide) #define os pesos da camada escondida com valores aleatorios entre 0 e 1
+        self.pesos_hide = np.random.rand(self.entradas.shape[1], self.c_hide) # Define os pesos da camada escondida com valores aleatorios entre 0 e 1
         self.pesos_saida = np.random.rand(self.c_hide, self.saida.shape[1])
         self.bias_hide = np.random.rand(1, self.c_hide)
         self.bias_saida = np.random.rand(1, self.saida.shape[1])
@@ -24,7 +24,7 @@ class MLP:
     
     def treino(self, x, y):
         for epoca in range(self.iteracoes):
-            # Forward
+            # Propagação
             soma_hide = np.dot(x, self.pesos_hide) + self.bias_hide 
             saida_hide = self.ativacao(soma_hide) 
 
