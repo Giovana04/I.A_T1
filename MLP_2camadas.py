@@ -3,9 +3,10 @@ import pandas as pd # Serve para ler o CSV
 from sklearn.metrics import classification_report # Serve para mostrar o relatório de classificação
 from sklearn.model_selection import train_test_split # Serve para dividir os dados em treino e teste
 from sklearn.preprocessing import StandardScaler # Serve para padronizar os dados
+import time 
 
 class MLP:
-    def __init__(self, tamanhos_das_camadas, tx_apendizagem=0.01, iteracoes=1000):
+    def __init__(self, tamanhos_das_camadas, tx_apendizagem, iteracoes):
         self.tamanhos_das_camadas = tamanhos_das_camadas
         self.tx_apendizagem = tx_apendizagem
         self.iteracoes = iteracoes
@@ -19,7 +20,7 @@ class MLP:
     def ativacao(self, x):
         return 1 / (1 + np.exp(-x))
 
-    def derivada_ativacao(self, x):
+    def derivada_ativacao(self, x): 
         return x * (1 - x)
 
     def previsao(self, x):
@@ -30,7 +31,8 @@ class MLP:
         return np.round(ativacoes)
 
     def treino(self, x, y):
-        for epoca in range(self.iteracoes):
+        stard_time = time.perf_counter()
+        for epoca in range(self.iteracoes or loss < 0.00001):
             lista_ativacoes = [x]
             ativacoes_camada = x
             
@@ -56,8 +58,12 @@ class MLP:
             if (epoca + 1) % 100 == 0:
                 loss = np.mean(np.square(y - saida_final)) # Mede o erro 
                 acc = np.mean(np.round(saida_final) == y) # Mede a acurácia
-                print(f"Ciclo {epoca+1}/{self.iteracoes} -> loss: {loss:.4f} - acc: {acc:.4f}")
+                print(f"Ciclo {epoca+1}/{self.iteracoes} -> loss: {loss:.5f} - acc: {acc:.5f}")
+                if loss < 0.00001: break
                 
+        end_time = time.perf_counter()
+        tempo = end_time - stard_time
+        print(f"\nTempo de treino: {tempo:.2f} segundos")
                 
 
 
@@ -89,17 +95,18 @@ def prepara_dados_com_scaler(arq):
     return X, Y.reshape(-1, 1)
 
 # ---- Main ----
+
 X, Y = prepara_dados_com_scaler('dados.csv')
 X_treino, X_teste, Y_treino, Y_teste = train_test_split(X, Y, test_size=0.3, random_state=42)
 
 n_col_entrada = X_treino.shape[1] # Numéro de características de entrada, que são as colunas do dataset (já modificadas com get_dummies)
-n_camada_oculta_1 = 5
+n_camada_oculta_1 = 10
 n_camada_oculta_2 = 5
 n_camada_saida = 1
 
 tamanhos_das_camadas = [n_col_entrada, n_camada_oculta_1, n_camada_oculta_2, n_camada_saida]
 
-mlp = MLP(tamanhos_das_camadas=tamanhos_das_camadas, tx_apendizagem=0.01, iteracoes=7000)
+mlp = MLP(tamanhos_das_camadas=tamanhos_das_camadas, tx_apendizagem=0.1, iteracoes=15000) # tx_apendizagem é a taxa de aprendizagem, que define o quanto os pesos serão ajustados a cada iteração, 0.5 não funciona porque é muito alto
 mlp.treino(X_treino, Y_treino)
 
 previsoes = mlp.previsao(X_teste)
@@ -108,7 +115,9 @@ print("\nTestes:")
 print(classification_report(Y_teste, previsoes))
 print("Número de previsões corretas:", np.sum(Y_teste == previsoes))
 print("Número de previsões incorretas:", np.sum(Y_teste != previsoes))
-print("Total de previsões:", len(Y_teste))
-print("Número de neurônios na camada de entrada:", n_col_entrada)
-print("\nNúmero de neurônios na primeira camada oculta:", n_camada_oculta_1)
+print("\nTotal de previsões:", len(Y_teste))
+print("Número de amostras de teste:", X_teste.shape[0])
+print("Número de amostras de treino:", X_treino.shape[0])
+print("\nNúmero de neurônios na camada de entrada:", n_col_entrada)
+print("Número de neurônios na primeira camada oculta:", n_camada_oculta_1)
 print("Número de neurônios na segunda camada oculta:", n_camada_oculta_2)
