@@ -22,7 +22,7 @@ class MLP:
     def derivada_ativacao(self, x):
         return x * (1 - x)
 
-    def propagacao(self, x):
+    def previsao(self, x):
         ativacoes = x
         for i in range(len(self.pesos)):
             soma_ponderada = np.dot(ativacoes, self.pesos[i]) + self.bias[i]
@@ -35,7 +35,7 @@ class MLP:
             ativacoes_camada = x
             
             for i in range(len(self.pesos)):
-                soma_ponderada = np.dot(ativacoes_camada, self.pesos[i]) + self.bias[i]
+                soma_ponderada = np.dot(ativacoes_camada, self.pesos[i]) + self.bias[i] 
                 ativacoes_camada = self.ativacao(soma_ponderada)
                 lista_ativacoes.append(ativacoes_camada)
                 
@@ -49,13 +49,13 @@ class MLP:
                 delta = erro * derivada
                 erro = delta.dot(self.pesos[i].T)
                 
-                self.pesos[i] += lista_ativacoes[i].T.dot(delta) * self.tx_apendizagem
+                self.pesos[i] += lista_ativacoes[i].T.dot(delta) * self.tx_apendizagem # Como funciona: https://www.youtube.com/watch?v=tIeHLnjs5U8
                 self.bias[i] += np.sum(delta, axis=0, keepdims=True) * self.tx_apendizagem
             
             # A cada 100 ciclos, imprime o status do treino
             if (epoca + 1) % 100 == 0:
-                loss = np.mean(np.square(y - saida_final))
-                acc = np.mean(np.round(saida_final) == y)
+                loss = np.mean(np.square(y - saida_final)) # Mede o erro 
+                acc = np.mean(np.round(saida_final) == y) # Mede a acurácia
                 print(f"Ciclo {epoca+1}/{self.iteracoes} -> loss: {loss:.4f} - acc: {acc:.4f}")
                 
                 
@@ -69,19 +69,19 @@ def prepara_dados_com_scaler(arq):
     for column in df.columns:
         if df[column].dtype == 'object':
             # Coloca o resultado de volta na coluna
-            df[column] = df[column].fillna(df[column].mode()[0])
+            df[column] = df[column].fillna(df[column].mode()[0]) # Usa a moda para colunas categóricas
         else:
             # Coloca o resultado de volta na coluna
-            df[column] = df[column].fillna(df[column].median())
+            df[column] = df[column].fillna(df[column].median()) # Usa a mediana para colunas numéricas
 
     Y = df['Pregnancy_Status'].values
     X = df.drop('Pregnancy_Status', axis=1)
     
-    X = pd.get_dummies(X, drop_first=True)
+    X = pd.get_dummies(X, drop_first=True) # Converte colunas categóricas em numéricas, então cada coluna com mais de 1 valor vira várias colunas binárias
     
     numeric_cols = X.select_dtypes(include=np.number).columns
-    scaler = StandardScaler()
-    X[numeric_cols] = scaler.fit_transform(X[numeric_cols])
+    scaler = StandardScaler() # Padroniza os dados numéricos, se tiver valores muito altos ou muito baixos, pode atrapalhar o treino então ele padroniza para os pesos não dominarem um ou outro
+    X[numeric_cols] = scaler.fit_transform(X[numeric_cols]) 
 
     X = X.values.astype(float)
     Y = np.where(Y == 'Yes', 1, 0)
@@ -92,21 +92,23 @@ def prepara_dados_com_scaler(arq):
 X, Y = prepara_dados_com_scaler('dados.csv')
 X_treino, X_teste, Y_treino, Y_teste = train_test_split(X, Y, test_size=0.3, random_state=42)
 
-n_features_entrada = X_treino.shape[1]
-n_camada_oculta_1 = 10
+n_col_entrada = X_treino.shape[1] # Numéro de características de entrada, que são as colunas do dataset (já modificadas com get_dummies)
+n_camada_oculta_1 = 5
 n_camada_oculta_2 = 5
 n_camada_saida = 1
 
-tamanhos_das_camadas = [n_features_entrada, n_camada_oculta_1, n_camada_oculta_2, n_camada_saida]
+tamanhos_das_camadas = [n_col_entrada, n_camada_oculta_1, n_camada_oculta_2, n_camada_saida]
 
-mlp = MLP(tamanhos_das_camadas=tamanhos_das_camadas, tx_apendizagem=0.01, iteracoes=5000)
+mlp = MLP(tamanhos_das_camadas=tamanhos_das_camadas, tx_apendizagem=0.01, iteracoes=7000)
 mlp.treino(X_treino, Y_treino)
 
-previsoes = mlp.propagacao(X_teste)
+previsoes = mlp.previsao(X_teste)
 
 print("\nTestes:")
 print(classification_report(Y_teste, previsoes))
 print("Número de previsões corretas:", np.sum(Y_teste == previsoes))
 print("Número de previsões incorretas:", np.sum(Y_teste != previsoes))
+print("Total de previsões:", len(Y_teste))
+print("Número de neurônios na camada de entrada:", n_col_entrada)
 print("\nNúmero de neurônios na primeira camada oculta:", n_camada_oculta_1)
 print("Número de neurônios na segunda camada oculta:", n_camada_oculta_2)
