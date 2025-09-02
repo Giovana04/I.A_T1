@@ -43,6 +43,7 @@ class MLP:
                 
             saida_final = lista_ativacoes[-1]
 
+
             # --- Início do Retropropagação ---
             erro = y - saida_final
             
@@ -51,9 +52,8 @@ class MLP:
                 delta = erro * derivada
                 erro = delta.dot(self.pesos[i].T)
                 
-                self.pesos[i] += lista_ativacoes[i].T.dot(delta) * self.tx_apendizagem # Como funciona: https://www.youtube.com/watch?v=tIeHLnjs5U8
-                self.bias[i] += np.sum(delta, axis=0, keepdims=True) * self.tx_apendizagem
-            
+                self.pesos[i] += lista_ativacoes[i].T.dot(delta) * self.tx_apendizagem 
+                self.bias[i] += np.sum(delta, axis=0, keepdims=True) * self.tx_apendizagem # Como funciona: https://www.youtube.com/watch?v=tIeHLnjs5U8
             # A cada 100 ciclos, imprime o status do treino
             if (epoca + 1) % 100 == 0:
                 loss = np.mean(np.square(y - saida_final)) # Mede o erro 
@@ -75,7 +75,7 @@ def prepara_dados_com_scaler(arq):
     for column in df.columns:
         if df[column].dtype == 'object':
             # Coloca o resultado de volta na coluna
-            df[column] = df[column].fillna(df[column].mode()[0]) # Usa a moda para colunas categóricas
+            df[column] = df[column].fillna(df[column].mode()[0]) # Usa a moda para colunas categóricas, preenchendo 
         else:
             # Coloca o resultado de volta na coluna
             df[column] = df[column].fillna(df[column].median()) # Usa a mediana para colunas numéricas
@@ -97,16 +97,16 @@ def prepara_dados_com_scaler(arq):
 # ---- Main ----
 
 X, Y = prepara_dados_com_scaler('dados.csv')
-X_treino, X_teste, Y_treino, Y_teste = train_test_split(X, Y, test_size=0.3, random_state=42)
+X_treino, X_teste, Y_treino, Y_teste = train_test_split(X, Y, test_size=0.3, random_state=42) 
 
 n_col_entrada = X_treino.shape[1] # Numéro de características de entrada, que são as colunas do dataset (já modificadas com get_dummies)
-n_camada_oculta_1 = 10
-n_camada_oculta_2 = 5
+n_camada_oculta_1 = 8
+n_camada_oculta_2 = 7
 n_camada_saida = 1
 
 tamanhos_das_camadas = [n_col_entrada, n_camada_oculta_1, n_camada_oculta_2, n_camada_saida]
 
-mlp = MLP(tamanhos_das_camadas=tamanhos_das_camadas, tx_apendizagem=0.1, iteracoes=15000) # tx_apendizagem é a taxa de aprendizagem, que define o quanto os pesos serão ajustados a cada iteração, 0.5 não funciona porque é muito alto
+mlp = MLP(tamanhos_das_camadas=tamanhos_das_camadas, tx_apendizagem=0.002, iteracoes=15000) # tx_apendizagem é a taxa de aprendizagem, que define o quanto os pesos serão ajustados a cada iteração, 0.5 não funciona porque é muito alto
 mlp.treino(X_treino, Y_treino)
 
 previsoes = mlp.previsao(X_teste)
@@ -118,6 +118,7 @@ print("Número de previsões incorretas:", np.sum(Y_teste != previsoes))
 print("\nTotal de previsões:", len(Y_teste))
 print("Número de amostras de teste:", X_teste.shape[0])
 print("Número de amostras de treino:", X_treino.shape[0])
+print("Porcentagem de acerto:", np.mean(Y_teste == previsoes) * 100)
 print("\nNúmero de neurônios na camada de entrada:", n_col_entrada)
 print("Número de neurônios na primeira camada oculta:", n_camada_oculta_1)
 print("Número de neurônios na segunda camada oculta:", n_camada_oculta_2)

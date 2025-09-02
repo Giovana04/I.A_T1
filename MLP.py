@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import time
 from sklearn.discriminant_analysis import StandardScaler
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
@@ -23,7 +24,8 @@ class MLP:
         return x * (1 - x) # É necessário para o cálculo do erro na retropropagação
     
     def treino(self, x, y):
-        for epoca in range(self.iteracoes):
+        start_time = time.perf_counter()
+        for epoca in range(self.iteracoes or loss < 0.00001):
             # Propagação
             soma_hide = np.dot(x, self.pesos_hide) + self.bias_hide 
             saida_hide = self.ativacao(soma_hide) 
@@ -50,6 +52,10 @@ class MLP:
                 loss = np.mean(np.square(y - saida_final))
                 acc = np.mean(np.round(saida_final) == y)
                 print(f"Epoch {epoca+1}/{self.iteracoes} - loss: {loss:.4f} - acc: {acc:.4f}")
+                if loss < 0.00001:
+                    break
+        end_time = time.perf_counter()
+        print(f"Treinamento concluído em {end_time - start_time:.2f} segundos.")
 
             
     def previsao(self, x):
@@ -97,7 +103,7 @@ X_train, X_test, Y_train, Y_test = train_test_split(
     X, Y, test_size=0.3, random_state=42)
 
 mlp = MLP()
-mlp.inicializacao(X_train, c_hide=10, saida=Y_train, tx_apendizagem=0.01, iteracoes=5000)
+mlp.inicializacao(X_train, c_hide=14, saida=Y_train, tx_apendizagem=0.55, iteracoes=15000)
 mlp.treino(X_train, Y_train)
 
 y_pred = mlp.previsao(X_test)
@@ -105,5 +111,7 @@ print("\n[INFO] avaliando a rede neural (70/30 split)...")
 print(classification_report(Y_test, y_pred))
 print("Número de previsões corretas:", np.sum(Y_test == y_pred))
 print("Número de previsões incorretas:", np.sum(Y_test != y_pred))
-print("numero de neuronios em cada camada intermediaria:", mlp.c_hide)
-print("Numero de camadas intermediarias:")
+print("numero de neuronios na intermediaria:", mlp.c_hide)
+print("taxa de aprendizagem:", mlp.tx_apendizagem)
+print("porcentagem de acerto:", np.mean(Y_test == y_pred) * 100)
+
